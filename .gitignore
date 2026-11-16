@@ -1,0 +1,3 @@
+# Raw and rendered episodes come from private logs. Never commit them.
+data/
+__pycache__/
