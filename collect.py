@@ -87,12 +87,19 @@ def episodes_in(path):
         if req is not None:
             if cur:
                 yield cur
-            cur = {"request": req, "steps": [], "interrupted": False}
+            cur = {"request": req, "steps": [], "interrupted": False, "time": d.get("timestamp", "")}
             by_id = {}
             continue
         if cur is None:
             continue
         content = (d.get("message") or {}).get("content")
+        if d["type"] == "user" and (d.get("origin") or {}).get("kind") == "task-notification":
+            # A background agent or command reporting back. The agent's later claims may rest on this.
+            raw = text_of(content)
+            parts = [m.group(1).strip() for tag in ("summary", "result")
+                     for m in [re.search(rf"<{tag}>(.*?)(</{tag}>|$)", raw, re.S)] if m]
+            cur["steps"].append({"kind": "note", "text": "\n".join(parts) or raw})
+            continue
         if d["type"] == "user" and isinstance(content, str) and content.startswith("[Request interrupted"):
             cur["interrupted"] = True
         if not isinstance(content, list):

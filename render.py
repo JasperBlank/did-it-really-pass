@@ -42,6 +42,8 @@ def render(ep, final_chars=1500):
     for i, s in enumerate(ep["steps"], 1):
         if s["kind"] == "say":
             out.append(f"[{i}] SAY: {clip(s['text'], 400)}")
+        elif s["kind"] == "note":
+            out.append(f"[{i}] REPORT from a background task: {clip(s['text'], 1500)}")
         else:
             out.append(f"[{i}] TOOL {s['tool']}: {render_args(s)}")
             res = trim_result(s["result"]).replace("\n", "\n      ")
