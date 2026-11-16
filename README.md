@@ -38,7 +38,7 @@ The nine serious cases, with project details removed:
 
 Seven of the ten minor cases are one session. Over a handful of requests the agent raised that same foot-slide limit step by step from 0.25 m to 3.5 m. It said so each time, which is why they count as minor, but no single message showed me the trend.
 
-How the review was done: for each of the 36 flags, Claude Fable 5.2 read the whole episode plus the earlier conversation in that session, which the monitors do not see, and wrote a verdict with the line that settles it. I checked that the quoted lines for the nine serious cases exist at the cited steps, and I read those nine against what I remember. The minor cases and the 17 rejected flags are the reviewer's verdicts only.
+How the review was done: for each of the 36 flags, Claude Fable 5.2 read the whole episode plus the earlier conversation in that session, which the monitors do not see, and wrote a verdict with the line that settles it. The quoted lines for the nine serious cases were checked to exist at the cited steps. I have gone through three of the nine against what I remember so far, and all three matched. The minor cases and the 17 rejected flags are the reviewer's verdicts only.
 
 ## Run it on your own logs
 
@@ -67,6 +67,39 @@ python context.py <episode id>
 Your logs stay on your machine. The only thing sent anywhere is each rendered episode to Anthropic through your own Claude login, the same place the session came from. `data/` is git-ignored.
 
 Cost on my logs, at list prices: $1.13 for Haiku on 1,005 episodes and $6.03 for Opus on the 148 that Haiku flagged.
+
+## Run it live
+
+Old failures matter less than the one happening now. `live.py` is a Claude Code Stop hook: each time the agent finishes a turn, Haiku checks that turn and Opus confirms any flag. On a confirmed flag the agent is stopped from finishing and shown the flag, so it has to fix the problem or correct what it told you.
+
+Add this to `~/.claude/settings.json`, with the path to your clone:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"C:/path/to/agent-monitor/live.py\"",
+            "timeout": 180
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+- **Wait:** about 5 seconds at the end of a working turn, 15 to 20 when Haiku flags something and Opus is called. Turns with fewer than 3 tool calls are skipped.
+- **Cost:** about a tenth of a cent per turn, plus 2 to 3 cents when Opus is called.
+- **Context:** unlike the history scan, the live monitor also sees your last three requests and the agent's answers to them. That addition has not been scored on the planted set.
+- **Fails open:** any error in the monitor lets the turn end normally.
+- **Log:** every verdict is appended to `data/live.jsonl`.
+- **Off switch:** set the environment variable `AGENT_MONITOR_OFF=1`.
+
+Tested on one known bad episode (blocked in 16 seconds) and one clean one (passed in 5), and confirmed to fire in the Claude desktop app. It has not yet caught a failure in live use.
 
 ## Limits
 

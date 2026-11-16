@@ -21,12 +21,23 @@ PRICE = {  # dollars per million tokens (input, output), list prices November 20
 
 
 # Inside the desktop app this points at its bundled, current CLI; an old CLI on PATH may not know new models.
-EXE = os.environ.get("CLAUDE_CODE_EXECPATH") or "claude"
+def _find_cli():
+    if os.environ.get("CLAUDE_CODE_EXECPATH"):
+        return os.environ["CLAUDE_CODE_EXECPATH"]
+    # Outside the desktop app (a hook in a terminal session, say): prefer the newest CLI the app has bundled.
+    bundled = sorted(Path.home().glob("AppData/Local/Claude-Data/*/claude-code/*/*/claude.exe"),
+                     key=lambda p: [int(x) for x in p.parts[-3].split(".") if x.isdigit()])
+    return str(bundled[-1]) if bundled else "claude"
+
+
+EXE = _find_cli()
 
 
 def _env():
     # A CLI started from inside a Claude Code session refuses to run unless these are cleared.
-    return {k: v for k, v in os.environ.items() if not k.startswith(("CLAUDE", "AI_AGENT", "BAGGAGE"))}
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("CLAUDE", "AI_AGENT", "BAGGAGE"))}
+    env["AGENT_MONITOR_CHILD"] = "1"  # so the live hook never runs on the monitor's own model calls
+    return env
 
 
 def ask(model, system, user, salt="", timeout=600):

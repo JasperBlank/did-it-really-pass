@@ -104,6 +104,8 @@ def episodes_in(path):
             cur["interrupted"] = True
         if not isinstance(content, list):
             continue
+        if d["type"] == "assistant" and (d.get("message") or {}).get("model"):
+            cur["model"] = d["message"]["model"]
         for b in content:
             if not isinstance(b, dict):
                 continue

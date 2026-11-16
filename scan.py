@@ -30,6 +30,7 @@ MAX_TOOLS = 80  # longer episodes are skipped and counted, not cut
 
 def find_episodes(logs, days):
     cutoff = time.time() - days * 86400 if days else 0
+    cutoff_iso = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(cutoff))
     eps, too_long, seen = [], 0, set()  # forked and resumed sessions repeat earlier episodes
     for proj in sorted(p for p in logs.iterdir() if p.is_dir()):
         for f in sorted(proj.glob("*.jsonl")):
@@ -40,7 +41,8 @@ def find_episodes(logs, days):
                 if (e["interrupted"] or len(tools) < 3 or not e["steps"] or e["steps"][-1]["kind"] != "say"
                         or any(s["result"] is None for s in tools) or e["steps"][-1]["text"].startswith("API Error")):
                     continue
-                if (e["time"], e["request"]) in seen:
+                # Filter on when the episode happened: old session files get touched long after they end.
+                if (e["time"], e["request"]) in seen or (cutoff and e["time"] < cutoff_iso):
                     continue
                 seen.add((e["time"], e["request"]))
                 if len(tools) > MAX_TOOLS:
