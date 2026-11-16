@@ -38,7 +38,7 @@ EXE = _find_cli()
 def _env():
     # A CLI started from inside a Claude Code session refuses to run unless these are cleared.
     env = {k: v for k, v in os.environ.items() if not k.startswith(("CLAUDE", "AI_AGENT", "BAGGAGE"))}
-    env["DID_IT_PASS_CHILD"] = "1"  # so the live hook never runs on the monitor's own model calls
+    env["DID_IT_REALLY_PASS_CHILD"] = "1"  # so the live hook never runs on the monitor's own model calls
     return env
 
 

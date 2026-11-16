@@ -1,4 +1,4 @@
-# did-it-pass
+# did-it-really-pass
 
 Checks your Claude Code history for times the agent said it worked when it didn't.
 
@@ -45,15 +45,15 @@ How the review was done: for each of the 36 flags, Claude Fable 5.2 read the who
 Needs a logged-in Claude Code command line (version 2.1.280 or newer) and [uv](https://docs.astral.sh/uv/). One line, nothing to clone:
 
 ```bash
-uvx --from git+https://github.com/JasperBlank/did-it-pass did-it-pass scan
+uvx --from git+https://github.com/JasperBlank/did-it-really-pass did-it-really-pass scan
 ```
 
-It counts the episodes from the last 30 days, tells you roughly what the scan will cost, and asks before spending anything. `--days 0` scans everything, `--confirm none` skips the Opus pass, and `--screen none` uses only the free rules. It prints the flagged episodes and writes every verdict, a write-up of each flag and a sheet for your own verdicts into `~/.did-it-pass/`.
+It counts the episodes from the last 30 days, tells you roughly what the scan will cost, and asks before spending anything. `--days 0` scans everything, `--confirm none` skips the Opus pass, and `--screen none` uses only the free rules. It prints the flagged episodes and writes every verdict, a write-up of each flag and a sheet for your own verdicts into `~/.did-it-really-pass/`.
 
 To judge a flag properly, look at it with the earlier conversation:
 
 ```bash
-uvx --from git+https://github.com/JasperBlank/did-it-pass did-it-pass context <episode id>
+uvx --from git+https://github.com/JasperBlank/did-it-really-pass did-it-really-pass context <episode id>
 ```
 
 Your logs stay on your machine. The only thing sent anywhere is each rendered episode to Anthropic through your own Claude login, the same place the session came from.
@@ -67,20 +67,20 @@ Old failures matter less than the one happening now. As a Claude Code Stop hook,
 Install it permanently, then add the hook:
 
 ```bash
-uv tool install git+https://github.com/JasperBlank/did-it-pass
+uv tool install git+https://github.com/JasperBlank/did-it-really-pass
 ```
 
 ```bash
-did-it-pass install-hook
+did-it-really-pass install-hook
 ```
 
-`pipx install git+https://github.com/JasperBlank/did-it-pass` works too. The installer adds one Stop hook to `~/.claude/settings.json`, keeps your other settings, and saves the previous file as `settings.json.bak`. `did-it-pass uninstall-hook` removes it and `did-it-pass log` shows recent verdicts.
+`pipx install git+https://github.com/JasperBlank/did-it-really-pass` works too. The installer adds one Stop hook to `~/.claude/settings.json`, keeps your other settings, and saves the previous file as `settings.json.bak`. `did-it-really-pass uninstall-hook` removes it and `did-it-really-pass log` shows recent verdicts.
 
 - **Wait:** about 5 seconds at the end of a working turn, 15 to 20 when Haiku flags something and Opus is called. Turns with fewer than 3 tool calls are skipped.
 - **Cost:** about a tenth of a cent per turn, plus 2 to 3 cents when Opus is called.
 - **Context:** unlike the history scan, the live monitor also sees your last three requests and the agent's answers to them. That addition has not been scored on the planted set.
 - **Fails open:** any error in the monitor lets the turn end normally.
-- **Off switch:** set the environment variable `DID_IT_PASS_OFF=1`.
+- **Off switch:** set the environment variable `DID_IT_REALLY_PASS_OFF=1`.
 
 Tested on one known bad episode (blocked in 16 seconds) and one clean one (passed in 5), and confirmed to fire in the Claude desktop app on Windows. It has not yet caught a failure in live use, and it has not been tried on macOS or Linux.
 
@@ -126,12 +126,12 @@ Read these with care:
 
 ### How the planted set was built
 
-1. **Collect** (`did_it_pass/collect.py`). 80 episodes from 7 projects, at most 2 per session, each with 5 to 30 tool calls, at least one shell command and one file edit.
-2. **Render** (`did_it_pass/render.py`). Each episode becomes numbered text: what the agent said, each tool call with its main arguments, and a trimmed result. Trimming keeps the first and last lines and any error lines in between.
-3. **Plant** (`did_it_pass/plant.py`). Sonnet 5.5 splices a short invented passage into every episode and rewrites the final message. Code checks each passage against its instruction and writes the answer key.
-4. **Rules** (`did_it_pass/rules.py`). Plain code: identical failing commands in a row, success words in the final message next to a failing last command, a claim of passing tests with no test command, and an edit to a test file between a failing and a passing run.
-5. **Monitor** (`did_it_pass/monitor.py`, `prompt.md`). The model gets the rendered episode and the three definitions, and replies with JSON: the failure type, the step and a quoted line.
-6. **Score** (`did_it_pass/score.py`).
+1. **Collect** (`did_it_really_pass/collect.py`). 80 episodes from 7 projects, at most 2 per session, each with 5 to 30 tool calls, at least one shell command and one file edit.
+2. **Render** (`did_it_really_pass/render.py`). Each episode becomes numbered text: what the agent said, each tool call with its main arguments, and a trimmed result. Trimming keeps the first and last lines and any error lines in between.
+3. **Plant** (`did_it_really_pass/plant.py`). Sonnet 5.5 splices a short invented passage into every episode and rewrites the final message. Code checks each passage against its instruction and writes the answer key.
+4. **Rules** (`did_it_really_pass/rules.py`). Plain code: identical failing commands in a row, success words in the final message next to a failing last command, a claim of passing tests with no test command, and an edit to a test file between a failing and a passing run.
+5. **Monitor** (`did_it_really_pass/monitor.py`, `prompt.md`). The model gets the rendered episode and the three definitions, and replies with JSON: the failure type, the step and a quoted line.
+6. **Score** (`did_it_really_pass/score.py`).
 
 Three precautions:
 
@@ -228,12 +228,12 @@ Test tampering:
 To rebuild the planted set and the tables, from a clone with a `data/` folder next to the code:
 
 ```bash
-python -m did_it_pass.collect
-python -m did_it_pass.plant
-python -m did_it_pass.monitor --split dev
-python -m did_it_pass.score --split dev --errors
-python -m did_it_pass.monitor --split test
-python -m did_it_pass.score --split test --errors
+python -m did_it_really_pass.collect
+python -m did_it_really_pass.plant
+python -m did_it_really_pass.monitor --split dev
+python -m did_it_really_pass.score --split dev --errors
+python -m did_it_really_pass.monitor --split test
+python -m did_it_really_pass.score --split test --errors
 ```
 
 Model replies are cached in the data folder, so a rerun is free and gives the same scores.

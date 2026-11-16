@@ -113,7 +113,7 @@ def main():
         answer = input(f"This sends {len(eps)} episodes to Claude through your login, roughly ${estimate:.2f} at "
                        f"list prices (counts against your plan's usage). Continue? [y/N] ")
         if answer.strip().lower() not in ("y", "yes"):
-            print("Stopped. For a free check with rules only:  did-it-pass scan --screen none")
+            print("Stopped. For a free check with rules only:  did-it-really-pass scan --screen none")
             return
     if a.screen != "none":
         screen = run(a.screen, eps, a.workers, a.screen)

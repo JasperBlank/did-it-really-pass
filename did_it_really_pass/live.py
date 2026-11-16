@@ -69,7 +69,7 @@ def judge(model, ep, before):
 
 
 def main():
-    if os.environ.get("DID_IT_PASS_OFF") or os.environ.get("DID_IT_PASS_CHILD"):
+    if os.environ.get("DID_IT_REALLY_PASS_OFF") or os.environ.get("DID_IT_REALLY_PASS_CHILD"):
         return
     hook = json.loads(sys.stdin.read() or "{}")
     if hook.get("stop_hook_active"):

@@ -1,4 +1,4 @@
-"""Command line: did-it-pass <command>.
+"""Command line: did-it-really-pass <command>.
 
   scan            check your past Claude Code sessions (asks before spending)
   context ID      show one flagged episode with the conversation before it
@@ -13,11 +13,11 @@ import sys
 from pathlib import Path
 
 SETTINGS = Path.home() / ".claude" / "settings.json"
-MARKERS = ("did_it_pass", "agent-monitor/live.py")  # commands this tool has installed, now or in the past
+MARKERS = ("did_it_really_pass", "did_it_pass", "agent-monitor/live.py")  # commands this tool has installed, now or in the past
 
 
 def _hook_command():
-    return f'"{Path(sys.executable).as_posix()}" -m did_it_pass hook'
+    return f'"{Path(sys.executable).as_posix()}" -m did_it_really_pass hook'
 
 
 def _without_ours(settings):
@@ -50,13 +50,13 @@ def install_hook():
     settings = json.loads(SETTINGS.read_text(encoding="utf-8")) if SETTINGS.exists() else {}
     command = _hook_command()
     stops = _without_ours(settings) + [{"hooks": [{
-        "type": "command", "command": command, "timeout": 180, "statusMessage": "did-it-pass is checking this turn"}]}]
+        "type": "command", "command": command, "timeout": 180, "statusMessage": "did-it-really-pass is checking this turn"}]}]
     _write(settings, stops)
     print(f"Installed in {SETTINGS} (previous version saved as settings.json.bak):\n  {command}")
     if any(part in sys.executable.replace("\\", "/") for part in ("/uv/cache/", "archive-v0", "/uvx/")):
         print("Warning: this Python belongs to a temporary uvx environment and may disappear.\n"
               "For the live hook, install the tool permanently first:  uv tool install <source>  or  pipx install <source>")
-    print("Every finished turn with 3 or more tool calls is now checked. Verdicts: did-it-pass log")
+    print("Every finished turn with 3 or more tool calls is now checked. Verdicts: did-it-really-pass log")
 
 
 def uninstall_hook():
@@ -65,7 +65,7 @@ def uninstall_hook():
         return
     settings = json.loads(SETTINGS.read_text(encoding="utf-8"))
     _write(settings, _without_ours(settings))
-    print(f"Removed the did-it-pass hook from {SETTINGS}.")
+    print(f"Removed the did-it-really-pass hook from {SETTINGS}.")
 
 
 def show_log():
@@ -85,7 +85,7 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
         print(__doc__)
         return
-    command, sys.argv = sys.argv[1], [f"did-it-pass {sys.argv[1]}"] + sys.argv[2:]
+    command, sys.argv = sys.argv[1], [f"did-it-really-pass {sys.argv[1]}"] + sys.argv[2:]
     if command == "scan":
         from .scan import main as run
     elif command == "context":
