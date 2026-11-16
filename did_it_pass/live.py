@@ -17,23 +17,23 @@ import sys
 import time
 from pathlib import Path
 
-HERE = Path(__file__).parent
-sys.path.insert(0, str(HERE))
-LOG = HERE / "data" / "live.jsonl"
+from .paths import DATA
+
+LOG = DATA / "live.jsonl"
 MIN_TOOLS, MAX_TOOLS = 3, 80
 EARLIER = 3  # earlier requests in the session shown to the monitor as context
 
 
 def log(entry):
-    LOG.parent.mkdir(exist_ok=True)
+    LOG.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps(dict(entry, at=time.strftime("%Y-%m-%dT%H:%M:%S")), ensure_ascii=False) + "\n")
 
 
 def last_episode(transcript, final_message):
     """The episode that just ended, plus a short summary of the ones before it."""
-    from collect import episodes_in
-    from render import clip
+    from .collect import episodes_in
+    from .render import clip
     eps = list(episodes_in(transcript))
     if not eps:
         return None, ""
@@ -54,9 +54,9 @@ def last_episode(transcript, final_message):
 
 
 def judge(model, ep, before):
-    from llm import ask, parse_json
-    from monitor import MODELS, PROMPT, TYPES
-    from render import render
+    from .llm import ask, parse_json
+    from .monitor import MODELS, PROMPT, TYPES
+    from .render import render
     text = render(ep, final_chars=6000)
     if before:
         text = ("EARLIER IN THIS SESSION (context only: a check reported here counts as run, and behaviour the "
@@ -69,7 +69,7 @@ def judge(model, ep, before):
 
 
 def main():
-    if os.environ.get("AGENT_MONITOR_OFF") or os.environ.get("AGENT_MONITOR_CHILD"):
+    if os.environ.get("DID_IT_PASS_OFF") or os.environ.get("DID_IT_PASS_CHILD"):
         return
     hook = json.loads(sys.stdin.read() or "{}")
     if hook.get("stop_hook_active"):

@@ -19,12 +19,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-import rules
-from collect import LOGS, episodes_in
-from monitor import MODELS, model_judge
-from render import render
+from . import rules
+from .collect import LOGS, episodes_in
+from .monitor import MODELS, model_judge
+from .paths import DATA
+from .render import render
 
-HERE = Path(__file__).parent
 MAX_TOOLS = 80  # longer episodes are skipped and counted, not cut
 
 
@@ -95,6 +95,7 @@ def main():
     ap.add_argument("--screen", choices=["haiku", "opus", "none"], default="haiku")
     ap.add_argument("--confirm", choices=["opus", "none"], default="opus")
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--yes", action="store_true", help="skip the cost question")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
 
@@ -104,6 +105,16 @@ def main():
     verdicts = {e["id"]: {"rules": rules.judge(e)} for e in eps}
     flagged = [e for e in eps if verdicts[e["id"]]["rules"]["failure"] != "none"]
     cost = 0.0
+    if a.screen != "none" and eps and not a.yes:
+        # Rough, from one scan of 1,005 episodes: $0.0011 per episode for Haiku, and Opus at about
+        # $0.04 on the 15% of episodes Haiku flags. Replies already cached cost nothing.
+        estimate = len(eps) * (0.0011 if a.screen == "haiku" else 0.035)
+        estimate += len(eps) * 0.15 * 0.04 if a.confirm == "opus" and a.screen == "haiku" else 0
+        answer = input(f"This sends {len(eps)} episodes to Claude through your login, roughly ${estimate:.2f} at "
+                       f"list prices (counts against your plan's usage). Continue? [y/N] ")
+        if answer.strip().lower() not in ("y", "yes"):
+            print("Stopped. For a free check with rules only:  did-it-pass scan --screen none")
+            return
     if a.screen != "none":
         screen = run(a.screen, eps, a.workers, a.screen)
         cost += sum(p["cost"] for p in screen.values())
@@ -119,8 +130,8 @@ def main():
             flagged = [e for e in flagged if confirm[e["id"]]["failure"] != "none"]
             print(f"{a.confirm} confirmed {len(flagged)}")
 
-    out = HERE / "data"
-    out.mkdir(exist_ok=True)
+    out = DATA
+    out.mkdir(parents=True, exist_ok=True)
     (out / "scan.json").write_text(json.dumps(verdicts, indent=1, ensure_ascii=False), encoding="utf-8")
     labels = out / "scan_labels.csv"  # keep verdicts already given
     old = {r[0]: r[5:7] for r in csv.reader(open(labels, encoding="utf-8")) if len(r) > 5} if labels.exists() else {}

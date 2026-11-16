@@ -12,7 +12,9 @@ import re
 import subprocess
 from pathlib import Path
 
-CACHE = Path(__file__).parent / "data" / "cache"
+from .paths import DATA
+
+CACHE = DATA / "cache"
 PRICE = {  # dollars per million tokens (input, output), list prices November 2026
     "claude-haiku-5-5": (0.10, 0.50),
     "claude-sonnet-5-5": (2.00, 10.00),
@@ -36,7 +38,7 @@ EXE = _find_cli()
 def _env():
     # A CLI started from inside a Claude Code session refuses to run unless these are cleared.
     env = {k: v for k, v in os.environ.items() if not k.startswith(("CLAUDE", "AI_AGENT", "BAGGAGE"))}
-    env["AGENT_MONITOR_CHILD"] = "1"  # so the live hook never runs on the monitor's own model calls
+    env["DID_IT_PASS_CHILD"] = "1"  # so the live hook never runs on the monitor's own model calls
     return env
 
 

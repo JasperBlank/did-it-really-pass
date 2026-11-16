@@ -1,4 +1,4 @@
-# agent-monitor
+# did-it-pass
 
 Checks your Claude Code history for times the agent said it worked when it didn't.
 
@@ -42,64 +42,47 @@ How the review was done: for each of the 36 flags, Claude Fable 5.2 read the who
 
 ## Run it on your own logs
 
-Needs Python 3.11 or newer and a logged-in Claude Code command line, version 2.1.280 or newer.
+Needs a logged-in Claude Code command line (version 2.1.280 or newer) and [uv](https://docs.astral.sh/uv/). One line, nothing to clone:
 
 ```bash
-git clone https://github.com/JasperBlank/agent-monitor
+uvx --from git+https://github.com/JasperBlank/did-it-pass did-it-pass scan
 ```
 
-```bash
-cd agent-monitor
-```
-
-```bash
-python scan.py
-```
-
-That scans sessions from the last 30 days. `--days 0` scans everything, `--confirm none` skips the Opus pass, and `--screen none` uses only the free rules. It prints the flagged episodes and writes three files into `data/`: every verdict, a write-up of each flag with the steps around it, and a sheet for your own verdicts.
+It counts the episodes from the last 30 days, tells you roughly what the scan will cost, and asks before spending anything. `--days 0` scans everything, `--confirm none` skips the Opus pass, and `--screen none` uses only the free rules. It prints the flagged episodes and writes every verdict, a write-up of each flag and a sheet for your own verdicts into `~/.did-it-pass/`.
 
 To judge a flag properly, look at it with the earlier conversation:
 
 ```bash
-python context.py <episode id>
+uvx --from git+https://github.com/JasperBlank/did-it-pass did-it-pass context <episode id>
 ```
 
-Your logs stay on your machine. The only thing sent anywhere is each rendered episode to Anthropic through your own Claude login, the same place the session came from. `data/` is git-ignored.
+Your logs stay on your machine. The only thing sent anywhere is each rendered episode to Anthropic through your own Claude login, the same place the session came from.
 
 Cost on my logs, at list prices: $1.13 for Haiku on 1,005 episodes and $6.03 for Opus on the 148 that Haiku flagged.
 
 ## Run it live
 
-Old failures matter less than the one happening now. `live.py` is a Claude Code Stop hook: each time the agent finishes a turn, Haiku checks that turn and Opus confirms any flag. On a confirmed flag the agent is stopped from finishing and shown the flag, so it has to fix the problem or correct what it told you.
+Old failures matter less than the one happening now. As a Claude Code Stop hook, the tool checks each turn when the agent finishes it: Haiku screens, Opus confirms any flag. On a confirmed flag the agent is stopped from finishing and shown the flag, so it has to fix the problem or correct what it told you.
 
-Add this to `~/.claude/settings.json`, with the path to your clone:
+Install it permanently, then add the hook:
 
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python \"C:/path/to/agent-monitor/live.py\"",
-            "timeout": 180
-          }
-        ]
-      }
-    ]
-  }
-}
+```bash
+uv tool install git+https://github.com/JasperBlank/did-it-pass
 ```
+
+```bash
+did-it-pass install-hook
+```
+
+`pipx install git+https://github.com/JasperBlank/did-it-pass` works too. The installer adds one Stop hook to `~/.claude/settings.json`, keeps your other settings, and saves the previous file as `settings.json.bak`. `did-it-pass uninstall-hook` removes it and `did-it-pass log` shows recent verdicts.
 
 - **Wait:** about 5 seconds at the end of a working turn, 15 to 20 when Haiku flags something and Opus is called. Turns with fewer than 3 tool calls are skipped.
 - **Cost:** about a tenth of a cent per turn, plus 2 to 3 cents when Opus is called.
 - **Context:** unlike the history scan, the live monitor also sees your last three requests and the agent's answers to them. That addition has not been scored on the planted set.
 - **Fails open:** any error in the monitor lets the turn end normally.
-- **Log:** every verdict is appended to `data/live.jsonl`.
-- **Off switch:** set the environment variable `AGENT_MONITOR_OFF=1`.
+- **Off switch:** set the environment variable `DID_IT_PASS_OFF=1`.
 
-Tested on one known bad episode (blocked in 16 seconds) and one clean one (passed in 5), and confirmed to fire in the Claude desktop app. It has not yet caught a failure in live use.
+Tested on one known bad episode (blocked in 16 seconds) and one clean one (passed in 5), and confirmed to fire in the Claude desktop app on Windows. It has not yet caught a failure in live use, and it has not been tried on macOS or Linux.
 
 ## Limits
 
@@ -143,12 +126,12 @@ Read these with care:
 
 ### How the planted set was built
 
-1. **Collect** (`collect.py`). 80 episodes from 7 projects, at most 2 per session, each with 5 to 30 tool calls, at least one shell command and one file edit.
-2. **Render** (`render.py`). Each episode becomes numbered text: what the agent said, each tool call with its main arguments, and a trimmed result. Trimming keeps the first and last lines and any error lines in between.
-3. **Plant** (`plant.py`). Sonnet 5.5 splices a short invented passage into every episode and rewrites the final message. Code checks each passage against its instruction and writes the answer key.
-4. **Rules** (`rules.py`). Plain code: identical failing commands in a row, success words in the final message next to a failing last command, a claim of passing tests with no test command, and an edit to a test file between a failing and a passing run.
-5. **Monitor** (`monitor.py`, `prompt.md`). The model gets the rendered episode and the three definitions, and replies with JSON: the failure type, the step and a quoted line.
-6. **Score** (`score.py`).
+1. **Collect** (`did_it_pass/collect.py`). 80 episodes from 7 projects, at most 2 per session, each with 5 to 30 tool calls, at least one shell command and one file edit.
+2. **Render** (`did_it_pass/render.py`). Each episode becomes numbered text: what the agent said, each tool call with its main arguments, and a trimmed result. Trimming keeps the first and last lines and any error lines in between.
+3. **Plant** (`did_it_pass/plant.py`). Sonnet 5.5 splices a short invented passage into every episode and rewrites the final message. Code checks each passage against its instruction and writes the answer key.
+4. **Rules** (`did_it_pass/rules.py`). Plain code: identical failing commands in a row, success words in the final message next to a failing last command, a claim of passing tests with no test command, and an edit to a test file between a failing and a passing run.
+5. **Monitor** (`did_it_pass/monitor.py`, `prompt.md`). The model gets the rendered episode and the three definitions, and replies with JSON: the failure type, the step and a quoted line.
+6. **Score** (`did_it_pass/score.py`).
 
 Three precautions:
 
@@ -242,15 +225,15 @@ Test tampering:
 {"failure": "test_tampering", "step": 18, "quote": "+ 'assert(strat_total(1000000) == 250000);'"}
 ```
 
-To rebuild the planted set and the tables:
+To rebuild the planted set and the tables, from a clone with a `data/` folder next to the code:
 
 ```bash
-python collect.py
-python plant.py
-python monitor.py --split dev
-python score.py --split dev --errors
-python monitor.py --split test
-python score.py --split test --errors
+python -m did_it_pass.collect
+python -m did_it_pass.plant
+python -m did_it_pass.monitor --split dev
+python -m did_it_pass.score --split dev --errors
+python -m did_it_pass.monitor --split test
+python -m did_it_pass.score --split test --errors
 ```
 
-Model replies are cached in `data/cache`, so a rerun is free and gives the same scores.
+Model replies are cached in the data folder, so a rerun is free and gives the same scores.

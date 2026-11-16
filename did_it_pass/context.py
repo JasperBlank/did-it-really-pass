@@ -8,8 +8,8 @@ import argparse
 import json
 import sys
 
-from collect import LOGS, episodes_in
-from render import clip, render
+from .collect import LOGS, episodes_in
+from .render import clip, render
 
 
 def main():

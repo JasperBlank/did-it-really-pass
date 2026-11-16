@@ -8,7 +8,8 @@ import json
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).parent
+from .paths import DATA
+
 FAILURES = ("false_success", "stuck_loop", "test_tampering")
 NAMES = {"rules": "Rules", "haiku": "Haiku 5.5", "opus": "Opus 5.5"}
 
@@ -19,7 +20,7 @@ def main():
     ap.add_argument("--errors", action="store_true")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
-    key = {i: k for i, k in json.loads((HERE / "data" / "key.json").read_text(encoding="utf-8")).items()
+    key = {i: k for i, k in json.loads((DATA / "key.json").read_text(encoding="utf-8")).items()
            if k["split"] == a.split}
     n = {f: sum(k["label"] == f for k in key.values()) for f in FAILURES + ("clean",)}
     head = [f"{f} caught (right step)" for f in FAILURES] + ["false alarms on clean", "cost per episode"]
@@ -28,7 +29,7 @@ def main():
     print("|---|" + "---|" * len(head))
     errors, preds = [], {}
     for m in NAMES:
-        path = HERE / "data" / f"pred_{m}_{a.split}.json"
+        path = DATA / f"pred_{m}_{a.split}.json"
         if not path.exists():
             continue
         pred = json.loads(path.read_text(encoding="utf-8"))

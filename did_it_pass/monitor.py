@@ -10,9 +10,10 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-import rules
-from llm import ask, parse_json
-from render import load, render
+from . import rules
+from .llm import ask, parse_json
+from .paths import DATA
+from .render import load, render
 
 HERE = Path(__file__).parent
 MODELS = {"haiku": "claude-haiku-5-5", "opus": "claude-opus-5-5"}
@@ -45,15 +46,15 @@ def main():
     ap.add_argument("--methods", nargs="+", default=["rules", "haiku", "opus"])
     ap.add_argument("--workers", type=int, default=6)
     a = ap.parse_args()
-    key = json.loads((HERE / "data" / "key.json").read_text(encoding="utf-8"))
-    eps = [e for e in load(HERE / "data" / "planted.jsonl") if key[e["id"]]["split"] == a.split]
+    key = json.loads((DATA / "key.json").read_text(encoding="utf-8"))
+    eps = [e for e in load(DATA / "planted.jsonl") if key[e["id"]]["split"] == a.split]
     for m in a.methods:
         if m == "rules":
             preds = {e["id"]: dict(rules.judge(e), cost=0.0) for e in eps}
         else:
             with ThreadPoolExecutor(a.workers) as pool:
                 preds = dict(zip((e["id"] for e in eps), pool.map(lambda e: model_judge(MODELS[m], e), eps)))
-        (HERE / "data" / f"pred_{m}_{a.split}.json").write_text(json.dumps(preds, indent=1), encoding="utf-8")
+        (DATA / f"pred_{m}_{a.split}.json").write_text(json.dumps(preds, indent=1), encoding="utf-8")
         bad = sum("error" in p for p in preds.values())
         print(f"{m}: {len(preds)} episodes judged" + (f", {bad} unparseable replies" if bad else ""))
 

@@ -15,10 +15,10 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from llm import ask, parse_json
-from render import load, render
+from .llm import ask, parse_json
+from .paths import DATA
+from .render import load, render
 
-HERE = Path(__file__).parent
 PLANTER = "claude-sonnet-5-5"  # not one of the monitors
 SHELL = {"Bash", "PowerShell"}
 TEST_FILE = re.compile(r"(^|[\\/_.\-])tests?([\\/_.\-]|$)|_test\.|\.test\.|\.spec\.|test_", re.I)
@@ -200,7 +200,7 @@ def main():
     ap.add_argument("--workers", type=int, default=6)
     a = ap.parse_args()
     rng = random.Random(a.seed)
-    eps = load(HERE / "data" / "episodes.jsonl")
+    eps = load(DATA / "episodes.jsonl")
     rng.shuffle(eps)
     jobs = [(label, variant) for label, variant, k in PLAN for _ in range(k)]
     assert len(jobs) == len(eps), (len(jobs), len(eps))
@@ -230,10 +230,10 @@ def main():
             key[i]["split"] = "test" if j < cut else "dev"
 
     planted.sort(key=lambda e: e["id"])
-    with open(HERE / "data" / "planted.jsonl", "w", encoding="utf-8") as f:
+    with open(DATA / "planted.jsonl", "w", encoding="utf-8") as f:
         for e in planted:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
-    (HERE / "data" / "key.json").write_text(json.dumps(dict(sorted(key.items())), indent=1), encoding="utf-8")
+    (DATA / "key.json").write_text(json.dumps(dict(sorted(key.items())), indent=1), encoding="utf-8")
     counts = {}
     for k in key.values():
         counts[(k["split"], k["label"])] = counts.get((k["split"], k["label"]), 0) + 1

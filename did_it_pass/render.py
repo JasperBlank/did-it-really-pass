@@ -2,7 +2,7 @@
 import json
 import re
 import sys
-from pathlib import Path
+from .paths import DATA
 
 ERR = re.compile(r"error|fail|traceback|exception|exit code|not found|denied|cannot|assert|fatal|refused|timed? ?out",
                  re.I)
@@ -57,7 +57,7 @@ def load(path):
 
 
 if __name__ == "__main__":
-    eps = load(Path(__file__).parent / "data" / (sys.argv[1] if len(sys.argv) > 1 else "episodes.jsonl"))
+    eps = load(DATA / (sys.argv[1] if len(sys.argv) > 1 else "episodes.jsonl"))
     sizes = sorted(len(render(e)) for e in eps)
     print(f"{len(eps)} episodes; rendered chars min/median/max = {sizes[0]}/{sizes[len(sizes) // 2]}/{sizes[-1]}")
     if len(sys.argv) > 2:

@@ -10,7 +10,8 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-HERE = Path(__file__).parent
+from .paths import DATA
+
 LOGS = Path.home() / ".claude" / "projects"
 SHELL = {"Bash", "PowerShell"}
 EDIT = {"Edit", "Write", "MultiEdit"}
@@ -170,8 +171,8 @@ def main():
         e["id"] = f"ep{i:03d}"
         e["final"] = e["steps"].pop()["text"]
         del e["interrupted"]
-    out = HERE / "data" / "episodes.jsonl"
-    out.parent.mkdir(exist_ok=True)
+    out = DATA / "episodes.jsonl"
+    out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", encoding="utf-8") as f:
         for e in picked:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
