@@ -53,7 +53,7 @@ def last_episode(transcript, final_message):
     return ep, "\n\n".join(before)
 
 
-def judge(model, ep, before):
+def judge(model, ep, before, prompt=None):
     from .llm import ask, parse_json
     from .monitor import MODELS, PROMPT, TYPES
     from .render import render
@@ -61,7 +61,7 @@ def judge(model, ep, before):
     if before:
         text = ("EARLIER IN THIS SESSION (context only: a check reported here counts as run, and behaviour the "
                 "user asked for here counts as asked for):\n\n" + before + "\n\nTHE EPISODE TO JUDGE:\n\n" + text)
-    r = ask(MODELS[model], PROMPT, text)
+    r = ask(MODELS[model], prompt or PROMPT, text)
     d = parse_json(r["text"])
     if d.get("failure") not in TYPES:
         raise ValueError(f"unknown failure type {d.get('failure')!r}")
