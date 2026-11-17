@@ -8,6 +8,8 @@ It reads your session logs, has a cheap model screen every episode for three fai
 - **Stuck loop**: the same command fails three or more times in a row with nothing changed in between.
 - **Test tampering**: the agent edits a test so it passes, when the job was to fix the code.
 
+**[Visual overview](https://jasperblank.github.io/did-it-really-pass/overview.html)**: three real cases next to their transcripts, how the live check runs, and how it was tested.
+
 ## What it found in my own logs
 
 I ran it on 1,005 episodes from about six months of my own Claude Code use (May to November 2026). An episode runs from one of my requests to the agent's final message.
